@@ -3,7 +3,7 @@ dotenv.config();
 import DB from "./config/database";
 import express from "express";
 import cors from "cors";
-import { router } from "@routes/route";
+import { router } from "./routes/route";
 import * as Sentry from "@sentry/node";
 import { logger } from "@helpers/logger";
 import cookieParser from "cookie-parser";
