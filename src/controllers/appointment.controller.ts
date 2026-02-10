@@ -51,7 +51,10 @@ export const createAppointment = async (req: Request, res: Response) => {
       appointmentId
     } = req.body;
 
-    const parsedInfo = personalInfo ? JSON.parse(personalInfo) : {};
+    const parsedInfo =
+      typeof personalInfo === "string"
+        ? JSON.parse(personalInfo)
+        : personalInfo || {};
 
     if (clientId) {
       await User.update(
@@ -74,13 +77,13 @@ export const createAppointment = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid transaction type" });
     }
 
-    const uploadedFiles = (req.files as Express.Multer.File[] || []).reduce(
-      (acc, file) => {
-        acc[file.fieldname] = `${req.protocol}://${req.get("host")}/uploads/${clientId}/${appointmentId}/${file.filename}`;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
+const files = Array.isArray(req.files) ? req.files : [];
+
+const uploadedFiles = files.reduce((acc, file) => {
+  acc[file.fieldname] =
+    `${req.protocol}://${req.get("host")}/uploads/${clientId}/${appointmentId}/${file.filename}`;
+  return acc;
+}, {} as Record<string, string>);
 
     const missing = requiredDocs.filter((reqName) => !uploadedFiles[reqName]);
     if (missing.length > 0) {
