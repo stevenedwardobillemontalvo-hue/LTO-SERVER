@@ -22,7 +22,7 @@
     "strict": true,
     "skipLibCheck": true,
     "typeRoots": ["./src/types", "./node_modules/@types"],
-    "types": ["node"]
+    "types": ["node", "express-session"]
   },
   "include": ["src/**/*", "src/types/**/*", "src/controllers/password.controller.ts", "../client/src/utils/auth.ts"],
   "exclude": ["node_modules", "dist"]

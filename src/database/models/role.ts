@@ -1,5 +1,5 @@
 import { Model, DataTypes, Optional } from "sequelize";
-import DB from "@config/database";
+import DB from "../../config/database";
 
 interface RoleAttributes {
   id: string;

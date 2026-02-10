@@ -5,7 +5,7 @@ import { transactionRequirements } from "@utils/requirements";
 import { Op } from "sequelize";
 import { createCalendarEvent } from "@services/calendar";
 import BlockedDates from "@models/blockdates";
-import sequelize from "@config/database";
+import sequelize from "../config/database";
 
 const updateBlockedSlot = async (date: string, time: string) => {
   return sequelize.transaction(async (t) => {

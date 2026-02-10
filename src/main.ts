@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-import DB from "@config/database";
+import DB from "./config/database";
 import express from "express";
 import cors from "cors";
 import { router } from "@routes/route";
