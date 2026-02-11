@@ -72,7 +72,8 @@ export const sendVerificationEmail = async (to: string, name: string, token: str
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
   console.log("Verification URL:", verificationUrl);
 
-  await transporter.sendMail({
+  try {
+  const info = await transporter.sendMail({
     from: `"LTO NAIC" <${process.env.EMAIL_USER}>`,
     to,
     subject: "Verify Your Email",
@@ -83,6 +84,10 @@ export const sendVerificationEmail = async (to: string, name: string, token: str
             <p>LTO NAIC</p>`,
            
   });
+   console.log("Email sent successfully:", info.response);
+} catch (error: any) {
+  console.error("EMAIL ERROR:", error);
+}
 };
 
 export const sendPasswordResetEmail = async (to: string, name: string, token: string) => {
