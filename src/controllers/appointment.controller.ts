@@ -40,6 +40,8 @@ const updateBlockedSlot = async (date: string, time: string) => {
 };
 
 export const createAppointment = async (req: Request, res: Response) => {
+  console.log('body:', req.body);
+console.log('files:', req.files);
   const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:6001";
   try {
     const {
