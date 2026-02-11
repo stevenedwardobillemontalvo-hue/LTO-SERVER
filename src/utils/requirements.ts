@@ -1,20 +1,21 @@
 export const transactionRequirements: Record<string, string[]> = {
-  "Non-Pro Driver License Application": [
-    "APL Form",
+  "Non-Professional Driver License Application": [
+    "Application for Permits and License (APL) Form",
     "Medical Certificate",
-    "PDC",
+    "Practical Driving Course (PDC)",
     "Valid Student Permit",
     "PSA Birth Certificate",
   ],
-  "Pro Driver License Application": [
-    "APL Form",
+  "Professional Driver License Application": [
+    "Application for Permits and License (APL) Form",
     "Medical Certificate",
-    "PDC",
-    "Valid Non-Pro License",
+    "Practical Driving Course (PDC)",
+    "Valid Non-Professional License",
+    "PSA Birth Certificate",
   ],
   "Adding Restriction": [
-    "APL Form",
+    "Application for Permits and License (APL) Form",
     "Medical Certificate",
-    "Current License",
+    "Valid Driver's License",
   ],
 };

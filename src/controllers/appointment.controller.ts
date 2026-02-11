@@ -51,10 +51,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       appointmentId
     } = req.body;
 
-    const parsedInfo =
-      typeof personalInfo === "string"
-        ? JSON.parse(personalInfo)
-        : personalInfo || {};
+    const parsedInfo = personalInfo ? JSON.parse(personalInfo) : {};
 
     if (clientId) {
       await User.update(
@@ -76,14 +73,17 @@ export const createAppointment = async (req: Request, res: Response) => {
     if (!requiredDocs) {
       return res.status(400).json({ error: "Invalid transaction type" });
     }
+    console.log("requiredDocs", requiredDocs)
 
-const files = Array.isArray(req.files) ? req.files : [];
-
-const uploadedFiles = files.reduce((acc, file) => {
-  acc[file.fieldname] =
-    `${req.protocol}://${req.get("host")}/uploads/${clientId}/${appointmentId}/${file.filename}`;
-  return acc;
-}, {} as Record<string, string>);
+    const uploadedFiles = (req.files as Express.Multer.File[] || []).reduce(
+      (acc, file) => {
+        acc[file.fieldname] =
+          `${req.protocol}://${req.get("host")}/uploads/${clientId}/${appointmentId}/${file.filename}`;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+    console.log("uploadedFiles", uploadedFiles)
 
     const missing = requiredDocs.filter((reqName) => !uploadedFiles[reqName]);
     if (missing.length > 0) {
@@ -91,6 +91,7 @@ const uploadedFiles = files.reduce((acc, file) => {
         error: `Missing required documents: ${missing.join(", ")}`,
       });
     }
+    console.log("missing", missing)
 
     const appointment = await Transaction.create({
       id: appointmentId,
