@@ -32,22 +32,24 @@ export const register = async (req: Request, res: Response) => {
           "Password must be at least 8 characters long, include uppercase, lowercase, number, and special character.",
       });
     }
-
+    console.log("Checking existing email...");
     const existing = await User.findOne({ where: { email } });
     if (existing) return res.status(400).json({ success: false, message: "Email already exists" });
 
+    console.log("Hashing password...");
     const hashed = await bcrypt.hash(password, 12);
 
     let userData: any = { firstName, lastName, email, password: hashed };
 
     if (type === "client") {
+      console.log("Processing CLIENT registration");
       const { middleName, birthdate, contactNumber, ltmsNumber } = req.body;
       if (!birthdate || !contactNumber || !ltmsNumber)
         return res.status(400).json({ success: false, message: "Missing required client fields" });
-
+      console.log("Client fields:", { birthdate, contactNumber, ltmsNumber });
       const clientRole = await Role.findOne({ where: { name: "Client" } });
       if (!clientRole) return res.status(500).json({ success: false, message: "Client role not found" });
-
+      console.log("Client role:", clientRole);
       const existingContact = await User.findOne({ where: { contactNumber } });
       if (existingContact) return res.status(400).json({ success: false, message: "Contact Number already exists" });
 
@@ -70,9 +72,9 @@ export const register = async (req: Request, res: Response) => {
       isVerified: true,
       verificationToken: null,
     };
-
+    
     const user = await User.create(userData);
-
+    console.log("User created successfully:", user.id);
     await sendAdminApprovedEmail(
       user.email,
       user.firstName
@@ -82,6 +84,8 @@ export const register = async (req: Request, res: Response) => {
       userData.isVerified = true; 
       userData.verificationToken = null; 
     }
+
+    console.log("==== REGISTER SUCCESS ====");
 
     const user = await User.create(userData);
 
