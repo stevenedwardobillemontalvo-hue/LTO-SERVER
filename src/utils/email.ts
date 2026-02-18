@@ -1,16 +1,16 @@
-import nodemailer from "nodemailer";
+import { google } from "googleapis";
 import axios from "axios";
 // import twilio from "twilio";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   host: process.env.EMAIL_HOST,
+//   port: Number(process.env.EMAIL_PORT),
+//   secure: false,
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+// });
 
 // const twilioClient = twilio(
 //   process.env.TWILIO_ACCOUNT_SID!,
@@ -32,6 +32,71 @@ const transporter = nodemailer.createTransport({
 //     console.error("Error sending SMS:", error.message);
 //   }
 // };
+
+const { OAuth2 } = google.auth;
+
+const oAuth2Client = new OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  process.env.GMAIL_REDIRECT_URI
+);
+
+oAuth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
+
+
+const formatRefId = (id: string) => id.slice(0, 8).toUpperCase();
+
+
+const sendGmail = async (to: string, subject: string, html: string) => {
+  try {
+  const res = await oAuth2Client.getAccessToken();
+  console.log("Access token object:", res);
+} catch (err: any) {
+  console.error("Failed to get access token:", err.response?.data || err.message);
+}
+  try {
+    console.log("📌 Starting to send email to:", to)
+
+    const accessTokenResponse = await oAuth2Client.getAccessToken();
+    const accessToken = typeof accessTokenResponse === "string"
+      ? accessTokenResponse
+      : accessTokenResponse?.token;
+
+      console.log("🔑 Access token obtained:", accessToken ? "✅ Success" : "❌ Failed");
+
+    if (!accessToken) throw new Error("Failed to get access token");
+
+    const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
+
+    const messageParts = [
+      `From: "LTO NAIC" <${process.env.EMAIL_USER}>`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      "Content-Type: text/html; charset=UTF-8",
+      "",
+      html,
+    ];
+    const message = messageParts.join("\n");
+
+    console.log("✉️ Message prepared:\n", message);
+    const encodedMessage = Buffer.from(message)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    await gmail.users.messages.send({
+      userId: "me",
+      requestBody: {
+        raw: encodedMessage,
+      },
+    });
+
+    console.log(`Email sent to ${to}`);
+  } catch (error: any) {
+    console.error("Error sending email:", error.message);
+  }
+};
 
 const sendSMS = async (to: string, message: string) => {
   const formattedNumber = formatPhone(to);
@@ -70,34 +135,25 @@ const formatPhone = (number: string) => {
 
 export const sendVerificationEmail = async (to: string, name: string, token: string) => {
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-  console.log("Verification URL:", verificationUrl);
 
-  try {
-  const info = await transporter.sendMail({
-    from: `"LTO NAIC" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: "Verify Your Email",
-    html: `<p>Hello ${name},</p>
-           <p>Click <a href="${verificationUrl}">here</a> to verify your email.</p>
+    const html = `<p>Hello ${name},</p>
+           <p>Plaease verify your email address by clicking the link below. </p>
+           ${verificationUrl}
            
             <br>
-            <p>LTO NAIC</p>`,
-           
-  });
-   console.log("Email sent successfully:", info.response);
-} catch (error: any) {
-  console.error("EMAIL ERROR:", error);
-}
+            <p>Regards</p>
+            <p>LTO Naic Appointment System</p>
+            <p>Land Transportation Office – Naic </p>
+    `;
+    await sendGmail(to, "Verify Your Email", html);
+     
 };
 
 export const sendPasswordResetEmail = async (to: string, name: string, token: string) => {
+
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
-  await transporter.sendMail({
-    from: `"LTO NAIC" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: "Reset your password",
-    html: `
+    const html = `
       <p>Hi ${name},</p>
       <p>You requested a password reset. Click below to set a new password:</p>
       <a href="${resetUrl}" target="_blank">${resetUrl}</a>
@@ -106,9 +162,10 @@ export const sendPasswordResetEmail = async (to: string, name: string, token: st
 
       
       <br>
-      <p>LTO NAIC</p>
-    `,
-  });
+      <p>LTO Naic Appointment System</p>
+      <p>Land Transportation Office – Naic</p>
+    `;
+    await sendGmail(to, "Reset your password", html);
 };
 
 export const sendAppointmentApprovedEmail = async (
@@ -123,29 +180,29 @@ export const sendAppointmentApprovedEmail = async (
 ) => {
   
   const confirmLink = `${process.env.FRONTEND_URL}/confirmation?token=${appointmentId}`;
+  const displayNote = note && note.trim() !== "" ? note : "None";
+  const refId = formatRefId(appointmentId);
 
-  await transporter.sendMail({
-    from: `"LTO NAIC APPOINTMENT SYSTEM" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: " LTO Naic Appointment Approved!",
-    html: `
+    const html = `
       <p>Hello ${name},</p>
       <p>We are pleased to inform you that your appointment request for the LTO Naic Appointment System has been <strong>APPROVED</strong>.</p><br>
-      <p>Appointment request details: </p> 
+      <p>Appointment Details: </p>
+      <p>REF. ID: ${refId}</p>
       <p>Transaction Type: ${transactionType}</p>
       <p>Date of Appointment: ${appointmentDate} </p>
-      <p>Time: ${appointmentTime}<p>
-      ${note ? `<p>Note: ${note}</p>` : ""}<br>
-      <p>Please confirm your appointment by clicking the link below: <br>${confirmLink}<p> <br>
+      <p>Time: ${appointmentTime}</p>
+      <p>Note: ${displayNote}</p><br>
+      <p>Please confirm your appointment by clicking the link below: <br>${confirmLink}</p> <br>
       <p>Please arrive at least 15–30 minutes early and bring all hard copy of required documents for your transaction.</p>
       <br><p>Thank you, and we look forward to assisting you. </p>
-      <br><p>LTO Naic Appointment System Land Transportation Office – Naic</p>
-    `,
-  });
+      <br><p>LTO Naic Appointment System</p>
+      <p>Land Transportation Office – Naic</p>
+    `;
+    await sendGmail(email, "Reset your password", html);
 
   await sendSMS(
     formatPhone(phone),
-    `Hello ${name}, your appointment for ${transactionType} on ${appointmentDate} at ${appointmentTime} has been APPROVED. ${note ? `Note: ${note}` : ""}`
+    `Hello ${name}, your appointment (REF. ID: ${refId}) for ${transactionType} on ${appointmentDate} at ${appointmentTime} has been APPROVED. Note: ${displayNote}}`
   );
 };
 
@@ -154,22 +211,22 @@ export const sendAdminApprovedEmail = async (
   name: string
 ) => {
 
-  await transporter.sendMail({
-    from: `"LTO NAIC APPOINTMENT SYSTEM" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "LTO Naic Appointment Account",
-    html: `
+    const html = `
       <p>Hello ${name},</p><br>
       <p>Welcome to LTO Naic Appointment System! </p> <br>
       <p>Your account has been created, and we're ready for you to dive in. Click the button below to log in to your portal and start exploring.</p><br>
       <p>Login in to Your Portal</p><br>
-      <p>Your login details are: <p>
-      <p>Username: <br>${email}<p> <br>
+      <p>Your login details are: </p>
+      <p>Email: <br>${email}</p> <br>
       <p>Important: For your security, we highly recommend changing your password immediately by clicking the forgot password.</p>
+      
+      <p>Login your account here:</p>
+      <p><a href="http://localhost:5173" target="_blank">http://localhost:5173</a></p>
       <br><p>Best regards,</p>
-      <p>LTO Naic Appointment System Land Transportation Office – Naic</p>
-    `,
-  });
+      <p>LTO Naic Appointment System</p>
+      <p>Land Transportation Office – Naic</p>
+    `;
+    await sendGmail(email, "LTO Naic Appointment Account", html);
 };
 
 export const sendAppointmentRejectedEmail = async (
@@ -179,29 +236,31 @@ export const sendAppointmentRejectedEmail = async (
   transactionType: string,
   appointmentDate: string,
   appointmentTime: string,
-  note: string
+  note: string,
+  appointmentId: string
 ) => {
-  
-  await transporter.sendMail({
-    from: `"LTO NAIC APPOINTMENT SYSTEM" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "LTO Naic Appointment Disapproved",
-    html: `
+
+    const displayNote = note && note.trim() !== "" ? note : "None";
+    const refId = formatRefId(appointmentId);
+    
+    const html = `
       <p>Hello ${name},</p>
       <p>We regret to inform you that your appointment request for the LTO Naic Appointment System has been <strong>DISAPPROVED</strong>.</p><br>
-      <p>Appointment request details: </p> 
+      <p>Appointment Details: </p>
+      <p>REF. ID: ${refId}</p>
       <p>Transaction Type: ${transactionType}</p>
       <p>Date of Appointment: ${appointmentDate} </p>
-      <p>Time: ${appointmentTime}<p>
-      ${note ? `<p>Note: ${note}</p>` : ""}<br>
+      <p>Time: ${appointmentTime}</p>
+      <p>Note: ${displayNote}</p> <br>
       <p>You may submit a new appointment request by choosing another available schedule. </p><br>
       <p>Thank you for your understanding. </p><br>
-      <br><p>LTO Naic Appointment System Land Transportation Office – Naic</p>
-    `,
-  });
+      <br><p>LTO Naic Appointment System</p>
+      <p>Land Transportation Office – Naic</p>
+    `;
+    await sendGmail(email, "LTO Naic Appointment Disapproved", html);
 
   await sendSMS(
     formatPhone(phone),
-    `Hello ${name}, your appointment for ${transactionType} has been REJECTED. ${note ? `Note: ${note}` : ""}`
+    `Hello ${name}, your appointment (REF. ID: ${refId}) for ${transactionType} has been REJECTED. Note: ${displayNote}`
   );
 };

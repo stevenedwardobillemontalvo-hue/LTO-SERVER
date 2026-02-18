@@ -1,6 +1,5 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../../config/database";
-
 export class BlockedDates extends Model {
   public id!: string;
   public date!: string;

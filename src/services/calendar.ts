@@ -2,8 +2,8 @@ import { getCalendarClient } from "../utils/googleCalendar";
 import { parseTimeRange } from "../utils/timeParser";
 
 interface CalendarPayload {
-  date: string;
-  time: string;
+  start: string;
+  end: string;
   transactionType: string;
   refreshToken: string;
   clientInfo: {
@@ -15,15 +15,13 @@ interface CalendarPayload {
 }
 
 export async function createCalendarEvent({
-  date,
-  time,
+  start,
+  end,
   transactionType,
   refreshToken,
   clientInfo,
 }: CalendarPayload) {
   const calendar = getCalendarClient(refreshToken);
-
-  const { start, end } = parseTimeRange(date, time);
 
   await calendar.events.insert({
     calendarId: "primary",
@@ -35,11 +33,11 @@ Email: ${clientInfo.email}
 Contact: ${clientInfo.contactNumber}
       `,
       start: {
-        dateTime: start.toISOString(),
+        dateTime: start,
         timeZone: "Asia/Manila",
       },
       end: {
-        dateTime: end.toISOString(),
+        dateTime: end,
         timeZone: "Asia/Manila",
       },
     },

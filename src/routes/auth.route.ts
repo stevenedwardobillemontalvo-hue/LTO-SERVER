@@ -53,9 +53,15 @@ router.get("/google/callback", async (req, res) => {
         ? appointment.appointmentDate
         : new Date(appointment.appointmentDate);
 
+    const slot = appointment.appointmentTime; 
+    const { startDate, endDate } = parseSlot(
+      appointmentDate.toISOString().split("T")[0],
+      slot
+);
+
     await createCalendarEvent({
-      date: appointmentDate.toISOString().split("T")[0],
-      time: appointment.appointmentTime,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
       transactionType: appointment.typeOfTransaction,
       refreshToken: user.google_refresh_token!,
       clientInfo: {
@@ -68,7 +74,7 @@ router.get("/google/callback", async (req, res) => {
 
     delete req.session.pendingAppointmentId;
 
-    res.redirect(`https://lto-naic-appointment-system.vercel.app/appointments?google=success`);
+    res.redirect(`http://localhost:5173/appointments?google=success`);
   } catch (err) {
     console.error(err);
     console.log("SESSION:", req.session);
@@ -108,4 +114,47 @@ router.get("/confirmation", async (req, res) => {
 });
 
 
+function parseTime(t: string) {
+  t = t.trim().toUpperCase();
+  const pmSlots = ["12:00", "1:00", "2:00", "3:00"];
+  let hours: number, minutes: number;
+
+  const match = t.match(/(\d+):(\d+)(\s*(AM|PM))?/i);
+  if (!match) throw new Error(`Invalid time format: ${t}`);
+
+  let [, hStr, mStr, , meridiem] = match;
+  hours = parseInt(hStr, 10);
+  minutes = parseInt(mStr, 10);
+
+  if (!meridiem) {
+    if (pmSlots.includes(`${hours}:${minutes}`)) {
+      hours = hours === 12 ? 12 : hours + 12;
+    }
+  } else {
+    meridiem = meridiem.toUpperCase();
+    if (meridiem === "PM" && hours !== 12) hours += 12;
+    if (meridiem === "AM" && hours === 12) hours = 0;
+  }
+
+  return { hours, minutes };
+}
+
+function parseSlot(date: string, slot: string) {
+  const [startStr, endStr] = slot.split("-");
+  if (!startStr || !endStr) throw new Error(`Invalid slot: ${slot}`);
+
+  const startTime = parseTime(startStr);
+  const endTime = parseTime(endStr);
+
+  const startDate = new Date(date);
+  startDate.setHours(startTime.hours, startTime.minutes, 0, 0);
+
+  const endDate = new Date(date);
+  endDate.setHours(endTime.hours, endTime.minutes, 0, 0);
+
+  return { startDate, endDate };
+}
+
 export default router;
+
+

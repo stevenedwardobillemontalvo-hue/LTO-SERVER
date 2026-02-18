@@ -15,6 +15,8 @@ const updateBlockedSlot = async (date: string, time: string) => {
       transaction: t,
     });
 
+console.log(blocked?.maxSlots)
+
     if (blocked) {
       if (blocked.maxSlots <= 0) {
         throw new Error("No available slots for this date and time");
@@ -24,6 +26,8 @@ const updateBlockedSlot = async (date: string, time: string) => {
         { maxSlots: blocked.maxSlots - 1 },
         { transaction: t }
       );
+
+      console.log("Update:", blocked?.maxSlots)
 
       return blocked;
     }
@@ -40,9 +44,7 @@ const updateBlockedSlot = async (date: string, time: string) => {
 };
 
 export const createAppointment = async (req: Request, res: Response) => {
-  console.log('body:', req.body);
-console.log('files:', req.files);
-  const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:6001";
+  // const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:6001";
   try {
     const {
       clientId,
@@ -75,17 +77,14 @@ console.log('files:', req.files);
     if (!requiredDocs) {
       return res.status(400).json({ error: "Invalid transaction type" });
     }
-    console.log("requiredDocs", requiredDocs)
 
     const uploadedFiles = (req.files as Express.Multer.File[] || []).reduce(
       (acc, file) => {
-        acc[file.fieldname] =
-          `${req.protocol}://${req.get("host")}/uploads/${clientId}/${appointmentId}/${file.filename}`;
+        acc[file.fieldname] = `${req.protocol}://${req.get("host")}/uploads/${clientId}/${appointmentId}/${file.filename}`;
         return acc;
       },
       {} as Record<string, string>
     );
-    console.log("uploadedFiles", uploadedFiles)
 
     const missing = requiredDocs.filter((reqName) => !uploadedFiles[reqName]);
     if (missing.length > 0) {
@@ -93,7 +92,15 @@ console.log('files:', req.files);
         error: `Missing required documents: ${missing.join(", ")}`,
       });
     }
-    console.log("missing", missing)
+
+    const normalizeTimeRange = (time: string) => {
+      return time
+        .replace(/\s/g, "")     
+        .replace(/AM|PM/gi, "")  
+        .toUpperCase();          
+    };
+  
+    const normalizedTime = normalizeTimeRange(appointmentTime)
 
     const appointment = await Transaction.create({
       id: appointmentId,
@@ -105,7 +112,7 @@ console.log('files:', req.files);
       status: "pending",
     });
 
-    await updateBlockedSlot(appointmentDate, appointmentTime);
+    await updateBlockedSlot(appointmentDate, normalizedTime);
 
     res.status(201).json({
       message: "Appointment created successfully",
@@ -276,6 +283,31 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Not authorized" });
     }
 
+    const oldDate = appointment.appointmentDate;
+    const oldTime = appointment.appointmentTime;
+
+    const oldBlock = await BlockedDates.findOne({
+      where: { date: oldDate, time: oldTime },
+    });
+    if (oldBlock) {
+      oldBlock.maxSlots += 1;
+      await oldBlock.save();
+    }
+
+    let newBlock = await BlockedDates.findOne({
+      where: { date: newDate, time: newTime },
+    });
+    if (newBlock) {
+      newBlock.maxSlots = Math.max(newBlock.maxSlots - 1, 0);
+      await newBlock.save();
+    } else {
+      newBlock = await BlockedDates.create({
+        date: newDate,
+        time: newTime,
+        maxSlots: 5, 
+      });
+    }
+
     appointment.appointmentDate = newDate;
     appointment.appointmentTime = newTime;
     appointment.status = "pending";
@@ -283,6 +315,7 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: "Appointment rescheduled", appointment });
   } catch (err: any) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

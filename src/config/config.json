@@ -1,26 +1,23 @@
 {
   "development": {
     "username": "root",
-    "password":"Steven25.",
+    "password":"ipa]S2*W4mt1",
     "database": "lto",
     "host": "127.0.0.1",
-    "port": 5432,
-    "dialect": "postgres"
+    "dialect": "mysql"
   },
   "test": {
     "username": "root",
-    "password": "Steven25.",
+    "password": "ipa]S2*W4mt1",
     "database": "database_test",
     "host": "127.0.0.1",
-    "dialect": "postgres"
+    "dialect": "mysql"
   },
   "production": {
-    "username": "lto",
-    "password": "V5xlS4Quw9YGGThZ7t3IRrnrTd7dydgC",
-    "database": "lto",
-    "host": "dpg-d65lsq56ubrc7398rsh0-a",
-    "port": 5432,
-    "dialect": "postgres",
-    "ssl": true
+    "username": "root",
+    "password": "ipa]S2*W4mt1",
+    "database": "database_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
   }
 }

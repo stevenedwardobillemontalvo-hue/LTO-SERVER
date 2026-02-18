@@ -184,9 +184,13 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
-    const previousStatus = appointment.status;
+    if (note !== undefined) {
+      appointment.note = note;
+    }
 
+    const previousStatus = appointment.status;
     appointment.status = status;
+
     await appointment.save();
 
     if (status === "rejected" && previousStatus !== "rejected") {
@@ -208,14 +212,21 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const email = appointment.client?.email;
     const fullName = `${appointment.client?.firstName || ""} ${appointment.client?.lastName || ""}`.trim();
     const transactionType = appointment.typeOfTransaction;
-
-    if (email) {
-      const formattedDate = appointment.appointmentDate
+    const formattedDate = appointment.appointmentDate
         ? new Date(appointment.appointmentDate).toISOString().split("T")[0]
         : "";
 
       const formattedTime = appointment.appointmentTime || "";
       const phone = appointment.client?.contactNumber || "";
+      const displayNote = appointment.note && appointment.note.trim() !== "" ? appointment.note : "None";
+
+    if (email) {
+      // const formattedDate = appointment.appointmentDate
+      //   ? new Date(appointment.appointmentDate).toISOString().split("T")[0]
+      //   : "";
+
+      // const formattedTime = appointment.appointmentTime || "";
+      // const phone = appointment.client?.contactNumber || "";
 
       if (status === "approved") {
         await sendAppointmentApprovedEmail(
@@ -225,7 +236,8 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
           transactionType,
           formattedDate,
           formattedTime,
-          note,
+          // note,
+          displayNote,
           appointment.id
         );
       }
@@ -235,10 +247,11 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
           email,
           phone,
           fullName,
+          transactionType,
           formattedDate,
           formattedTime,
-          transactionType,
-          note
+          displayNote,
+          appointment.id
         );
       }
     }
@@ -396,17 +409,26 @@ export const getblockDates = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing date parameter" });
     }
 
-    const blocks = await BlockedDates.findAll({ where: { date } });
+    const blocks = await BlockedDates.findAll({ 
+      where: { date },
+      order: [["updatedAt", "DESC"]],
+      raw: true,
+     });
 
-    res.json({
-      success: true,
-      blocks,
-    });
+    const latestBlocks = Object.values(
+      blocks.reduce((acc: Record<string, any>, b) => {
+        if (!acc[b.time]) acc[b.time] = b;
+        return acc;
+      }, {})
+    );
+
+  res.json({ success: true, blocks: latestBlocks });
   } catch (err: any) {
-    console.error("❌ Error fetching block dates:", err);
+    console.error("Error fetching block dates:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 export const getAllAdmins = async (_req: Request, res: Response) => {
   try {
