@@ -198,7 +198,7 @@ export const sendAppointmentApprovedEmail = async (
       <br><p>LTO Naic Appointment System</p>
       <p>Land Transportation Office – Naic</p>
     `;
-    await sendGmail(email, "Reset your password", html);
+    await sendGmail(email, "LTO Naic Appointment Approved", html);
 
   await sendSMS(
     formatPhone(phone),
@@ -221,7 +221,7 @@ export const sendAdminApprovedEmail = async (
       <p>Important: For your security, we highly recommend changing your password immediately by clicking the forgot password.</p>
       
       <p>Login your account here:</p>
-      <p><a href="http://localhost:5173" target="_blank">http://localhost:5173</a></p>
+      <p><a href="https://lto-naic-appointment-system.vercel.app" target="_blank">https://lto-naic-appointment-system.vercel.app</a></p>
       <br><p>Best regards,</p>
       <p>LTO Naic Appointment System</p>
       <p>Land Transportation Office – Naic</p>
