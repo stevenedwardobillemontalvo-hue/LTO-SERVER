@@ -23,7 +23,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:3000", "https://lto-naic-appointment-system.vercel.app"],
+    origin: ["https://ltonaic.online", "http://localhost:3000", "https://lto-naic-appointment-system.vercel.app"],
     methods: ["GET", "POST", "PUT"],
   },
 });
@@ -44,7 +44,7 @@ const io = new Server(httpServer, {
 // ------------------ CORS ------------------
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000", "https://lto-naic-appointment-system.vercel.app"], 
+    origin: ["https://ltonaic.online", "http://localhost:3000", "https://lto-naic-appointment-system.vercel.app"], 
     credentials: true, 
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -78,7 +78,7 @@ app.use((req, res, next) => {
 
 app.use('/uploads',
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000", "https://lto-naic-appointment-system.vercel.app"],
+    origin: ["https://ltonaic.online", "http://localhost:3000", "https://lto-naic-appointment-system.vercel.app"],
     credentials: true
   }),
   express.static(path.join(__dirname, "../uploads"))
