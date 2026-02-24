@@ -83,14 +83,6 @@ export const register = async (req: Request, res: Response) => {
       userData.verificationToken = null; 
     }
 
-    const user = await User.create(userData);
-
-    if (type === "client") {
-      const verificationToken = randomBytes(32).toString("hex");
-      userData.verificationToken = verificationToken;
-      await sendVerificationEmail(user.email, user.firstName, verificationToken);
-    }
-
     res.status(201).json({
       success: true,
       message:
