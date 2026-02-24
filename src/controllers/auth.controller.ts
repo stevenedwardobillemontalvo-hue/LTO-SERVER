@@ -58,6 +58,7 @@ export const register = async (req: Request, res: Response) => {
       
       const verificationToken = randomBytes(32).toString("hex");
       userData.verificationToken = verificationToken;
+      console.log("first", verificationToken);
 
     } else {
       let roleName = adminType?.toLowerCase() === "superadmin" ? "SuperAdmin" : "Admin";
@@ -89,6 +90,7 @@ export const register = async (req: Request, res: Response) => {
       const verificationToken = randomBytes(32).toString("hex");
       userData.verificationToken = verificationToken;
       await sendVerificationEmail(user.email, user.firstName, verificationToken);
+      console.log("Second", verificationToken);
     }
 
     res.status(201).json({
